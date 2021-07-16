@@ -2,7 +2,7 @@ provider "azurerm" {
     features {}
 }
 locals {
-    web_server_name = var.environment == "production" ? "${var.web_server_name}-prd" : "{var.web_server_name}-dev
+    web_server_name = var.environment == "production" ? "${var.web_server_name}-prd" : "{var.web_server_name}-dev"
     build_environment = var.environment == "production" ? "production":"development"
 }
 resource "azurerm_resource_group" "web_server_rg" {
@@ -55,7 +55,7 @@ resource "azurerm_network_security_rule" "web_server_nsg_rule_rdp" {
   network_security_group_name = azurerm_network_security_group.web_server_nsg.name
   count = var.environment == "production" ? 0:1 
 }
-resource "azurerm_network_security_rule" "web_server_nsg_rule_rdp" {
+resource "azurerm_network_security_rule" "web_server_nsg_rule_http" {
  name                        = "RDP Inbound"
   priority                    = 110
   direction                   = "Inbound"
@@ -73,12 +73,7 @@ network_security_group_id = azurerm_network_security_group.web_server_nsg.id
 subnet_id = azurerm_subnet.web_server_subnet["web-server"].id 
 }
 
-resource "azurerm_network_interface_security_group_association" "web_server_nsg_association" {
-  network_interface_id      = azurerm_network_interface.web_server_nic.id 
-  network_security_group_id = azurerm_network_security_group.web_server_nsg.id
-}
-
-resouece "azurerm_storage_account" "storage_account" {
+resource "azurerm_storage_account" "storage_account" {
     name = "gopalstorageaccount"
     location = var.web_server_location
     resource_group_name = azurerm_resource_group.web_server_rg.name
@@ -97,7 +92,7 @@ resource "azurerm_virtual_machine_scale_set" "web_server" {
       capacity  = var.web_server_count
   }
   
-  storage_profile_image_refrence {
+  storage_profile_image_reference {
     publisher = "MicrosoftWindowsServer"
     offer     = "WindowsServer"
     sku       = "2016-Datacenter"
@@ -107,26 +102,31 @@ resource "azurerm_virtual_machine_scale_set" "web_server" {
   storage_profile_os_disk {
     name = ""
     caching              = "ReadWrite"
-    creation_option = "FromImage"
+    create_option = "FromImage"
     managed_disk_type = "Standard_LRS"
   }
 
   os_profile {
       computer_name_prefix = local.web_server_name
-      admin_user= "webserver"
-      password = "Admin@123456"
+      admin_username = "webserver"
+      admin_password = "Admin@123456"
   }
 
   os_profile_windows_config {
       provision_vm_agent = true
   }
-  ip_configuration {
+  network_profile {
+    name = local.web_server_name
+    primary = true 
+    
+    ip_configuration {
       name = local.web_server_name
       primary = true 
       subnet_id = azurerm_subnet.web_server_subnet["web-server"].id
+    }
   }
   boot_diagnostics {
-      enable = true
+      enabled = true
       storage_uri = azurerm_storage_account.storage_account.primary_blob_endpoint
   }
 }
