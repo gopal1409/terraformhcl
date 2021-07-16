@@ -65,7 +65,7 @@ resource "azurerm_network_interface_security_group_association" "web_server_nsg_
 resource "azurerm_windows_virtual_machine" "web_server" {
   name                = var.web_server_name
   resource_group_name = azurerm_resource_group.web_server_rg.name 
-  location            = azurerm_resource_group.web_server_location
+  location            = var.web_server_location
   size                = "Standard_B1s"
   admin_username      = "adminuser"
   admin_password      = "P@$$w0rd1234!"
