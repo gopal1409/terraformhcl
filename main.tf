@@ -68,7 +68,7 @@ resource "azurerm_windows_virtual_machine" "web_server" {
   location            = var.web_server_location
   size                = "Standard_B1s"
   admin_username      = "adminuser"
-  admin_password      = "P@$$w0rd1234!"
+  admin_password      = data.azurerm_key_vault_secret.admin_password.value
   network_interface_ids = [
     azurerm_network_interface.web_server_nic.id,
   ]
